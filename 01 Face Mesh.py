@@ -1,28 +1,28 @@
 import cv2
 import mediapipe as mp
+import numpy
 
 capture = cv2.VideoCapture(0)
-mpHands = mp.solutions.hands
-hands = mpHands.Hands(False, 2, 0.5, 0.5)
+mpFace = mp.solutions.face_mesh
+face = mpFace.FaceMesh(False, 1, 0.5, 0.5)
 mpDraw = mp.solutions.drawing_utils
 
-success, img = capture.read()
-h, w, c = img.shape
-
 def recogniseGesture(img):
-    return "hand"
+    return "face"
 
 while True:
     success, img = capture.read()
+    h, w, c = img.shape
     img = cv2.flip(img, 1)
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    results = hands.process(imgRGB)
-s
-    if results.multi_hand_landmarks:
-        for handLms in results.multi_hand_landmarks:
+    results = face.process(imgRGB)
+
+
+    if results.multi_face_landmarks:
+        for faceLms in results.multi_face_landmarks:
             minX, maxX, minY, maxY = w, 0, h, 0
-            mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
-            for lm in handLms.landmark:
+            mpDraw.draw_landmarks(img, faceLms, mpFace.FACE_CONNECTIONS, mpDraw.DrawingSpec(mpDraw.RED_COLOR, 1, 1), mpDraw.DrawingSpec((0,255, 0), 2, 1))
+            for lm in faceLms.landmark:
                 if lm.x > maxX:
                     maxX = lm.x
                 if lm.x < minX:
