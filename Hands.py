@@ -6,18 +6,16 @@ mpHands = mp.solutions.hands
 hands = mpHands.Hands(False, 2, 0.5, 0.5)
 mpDraw = mp.solutions.drawing_utils
 
-success, img = capture.read()
-h, w, c = img.shape
-
 def recogniseGesture(img):
     return "hand"
 
 while True:
     success, img = capture.read()
     img = cv2.flip(img, 1)
+    h, w, c = img.shape
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     results = hands.process(imgRGB)
-s
+
     if results.multi_hand_landmarks:
         for handLms in results.multi_hand_landmarks:
             minX, maxX, minY, maxY = w, 0, h, 0
