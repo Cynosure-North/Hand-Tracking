@@ -3,83 +3,87 @@ import mediapipe as mp
 import math
 import numpy as np
 
+# flags
+claws = True
+skeleton = True
+dots = True
+box = False
+gesture_text = True
+angle_text = False
 
-#Setup stuff
+# Setup stuff
 capture = cv2.VideoCapture(0)
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(False, 2, 0.8, 0.5)
 mpDraw = mp.solutions.drawing_utils
 
-#flags
-claws = True
-skeleton = False
-dots = False
-box = True
-gesture_text = True
-angle_text = False
+
 
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
-def angle_between(v1, v2): 
+
+def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 def drawDebug(handLms, img):
 
-    # Debug Draw
+    minX, maxX, minY, maxY = w, 0, h, 0
+    for id, lm in enumerate(handLms.landmark):
+        if lm.x > maxX:
+            maxX = lm.x
+        if lm.x < minX:
+            minX = lm.x
+        if lm.y > maxY:
+            maxY = lm.y
+        if lm.y < minY:
+            minY = lm.y
+    minX, maxX, minY, maxY = int(
+        minX * w), int(maxX * w), int(minY * h), int(maxY * h)
+
+    if box:
+        img = cv2.rectangle(img, (minX - 7, minY - 7),
+                            (maxX + 7, maxY + 7), (0, 0, 255), 2)
+
     # landmarks
-    if skeleton and  dots:
+    if skeleton and dots:
         mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
     elif skeleton and not dots:
         mpDraw.draw_landmarks(img, mpHands.HAND_CONNECTIONS)
     elif not skeleton and dots:
         mpDraw.draw_landmarks(img, handLms)
 
-    if box:
-        minX, maxX, minY, maxY = w, 0, h, 0
-        for id, lm in enumerate(handLms.landmark):
-            if lm.x > maxX:
-                maxX = lm.x
-            if lm.x < minX:
-                minX = lm.x
-            if lm.y > maxY:
-                maxY = lm.y
-            if lm.y < minY:
-                minY = lm.y
-        minX, maxX, minY, maxY = int(minX * w), int(maxX * w), int(minY * h), int(maxY * h)
-        img = cv2.rectangle(img, (minX - 7, minY - 7), (maxX + 7, maxY + 7), (0, 0, 255), 2)
-
     if claws:
-        for id, lm in enumerate(handLms.landmark):
+        for id in enumerate(handLms.landmark):
             if id in (1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19):
-                start = (handLms.landmark[id].x, handLms.landmark[id].y)
-                end = vectorDiff2D(*start, handLms.landmark[id+1].x, handLms.landmark[id+1].y, 1)
-                img = cv2.line(img, (int(start[0] * w), int(start[1] * h)), (int(end[0]+start[0] * w), int(end[1]+start[1] * h)), 2)
+                start = (handLms.landmark.x, handLms.landmark[id].y)
+                end = vectorDiff2D(
+                    *start, handLms.landmark[id + 1].x, handLms.landmark[id + 1].y, 1)
+                img = cv2.line(img, (int(start[0] * w), int(start[1] * h)), (int(
+                    end[0] + start[0] * w), int(end[1] + start[1] * h)), 2)
                 print()
-                print(w, h)
-                print(int(start[0] * w), int(start[1] * h))
-                print(int(end[0] * w), int(end[1] * h))
-
+                print(math.sqrt(end[0]**2 + end[1]**2))
 
     if angle_text:
         for id, lm in enumerate(handLms.landmark):
             angle = jointAngle(id, handLms)
-            cv2.putText(img, angle, (int(lm.x * w), int(lm.y * h)), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
+            cv2.putText(img, angle, (int(lm.x * w), int(lm.y * h)),
+                        cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
 
     # text
     if gesture_text:
-        cv2.putText(img, gesture, (minX - 5, minY - 10), cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0))
-
+        cv2.putText(img, gesture, (minX - 5, minY - 10),
+                    cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0))
 
 
 def recogniseGesture(handLms):
     tiltDirection = 0
-    #TODO: It doesn't work if it's side on
+    # TODO: It doesn't work if it's side on
     gesture = ""
     for id, lm in enumerate(handLms.landmark):
-        if id in (5,9,13,17):
+        if id in (5, 9, 13, 17):
             tiltDirection += lm.z
 
     if tiltDirection < -0.3:
@@ -91,6 +95,7 @@ def recogniseGesture(handLms):
 
     return gesture
 
+
 def vectorDiff2D(x1, y1, x2, y2, scale=1):
     deltaX = (x2 - x1)
     deltaY = (y2 - y1)
@@ -101,13 +106,13 @@ def vectorDiff2D(x1, y1, x2, y2, scale=1):
 
 
 def jointAngle(id, handLms):
-    if id!=5 and id!=9 and id!=13 and id!=17:
+    if id != 5 and id != 9 and id != 13 and id != 17:
         return
     pass
 
+
 def fingerAngle(id, handLms):
     pass
-
 
 
 while True:
